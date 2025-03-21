@@ -1,0 +1,23 @@
+body { font-family: Arial, sans-serif; margin: 20px; }
+.survey-card { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+button { margin: 5px; }
+form > div { margin: 15px 0; }
+.question-item { padding: 10px; border: 1px dashed #ccc; margin: 5px 0; cursor: move; }
+.sortable-ghost { opacity: 0.4; }
+#loader { text-align: center; margin: 20px; }
+header {
+    background-color: #f8f9fa;
+    padding: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  header a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #007bff;
+  }
+  
+  header a:hover {
+    text-decoration: underline;
+  }

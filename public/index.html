@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Каталог анкет</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Каталог анкет</h1>
+  <a href="/create.html">Создать анкету</a>
+  <div>
+    <label>Сортировать по: </label>
+    <select id="sortBy" onchange="loadSurveys()">
+      <option value="">Без сортировки</option>
+      <option value="title">Название</option>
+      <option value="questions">Количество вопросов</option>
+      <option value="responseCount">Количество заполнений</option>
+    </select>
+  </div>
+  <div id="survey-list"></div>
+
+  <script>
+    let page = 1;
+    let loading = false;
+    const limit = 10;
+
+    function loadSurveys(append = false) {
+      if (loading) return;
+      loading = true;
+      const sortBy = document.getElementById('sortBy').value;
+      fetch(`/api/surveys?sortBy=${sortBy}&page=${page}&limit=${limit}`)
+        .then(res => res.json())
+        .then(surveys => {
+          const list = document.getElementById('survey-list');
+          if (!append) list.innerHTML = '';
+          if (!surveys.length && page === 1) {
+            list.innerHTML = '<p>Анкет пока нет</p>';
+            return;
+          }
+          surveys.forEach(survey => {
+            const card = document.createElement('div');
+            card.className = 'survey-card';
+            card.innerHTML = `
+              <h2>${survey.title}</h2>
+              <p>${survey.description}</p>
+              <p>Вопросов: ${survey.questions.length}</p>
+              <p>Заполнений: ${survey.responseCount || 0}</p>
+              <button onclick="location.href='/create.html?id=${survey._id}'">Редактировать</button>
+              <button onclick="location.href='/survey.html?id=${survey._id}'">Запустить</button>
+              <button onclick="location.href='/stats.html?id=${survey._id}'">Статистика</button>
+              <button onclick="deleteSurvey('${survey._id}')">Удалить</button>
+            `;
+            list.appendChild(card);
+          });
+          loading = false;
+          if (surveys.length === limit) page++;
+        });
+    }
+
+    function deleteSurvey(surveyId) {
+      if (confirm('Вы уверены, что хотите удалить эту анкету?')) {
+        fetch(`/api/surveys/${surveyId}`, {
+          method: 'DELETE'
+        })
+          .then(res => {
+            if (!res.ok) {
+              throw new Error('Ошибка при удалении анкеты');
+            }
+            return res.json();
+          })
+          .then(data => {
+            alert('Анкета успешно удалена');
+            location.reload(); // Перезагружаем страницу, чтобы обновить список анкет
+          })
+          .catch(error => {
+            console.error('Ошибка удаления анкеты:', error);
+            alert('Ошибка при удалении анкеты');
+          });
+      }
+    }
+
+    window.addEventListener('scroll', () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+        loadSurveys(true);
+      }
+    });
+
+    loadSurveys(); // Первая загрузка
+  </script>
+</body>
+</html>

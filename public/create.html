@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Создать/Редактировать анкету</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+</head>
+<body>
+  <header>
+    <a href="/">Каталог анкет</a>
+  </header>
+  <h1>Создать/Редактировать анкету</h1>
+  <form id="survey-form">
+    <input type="text" id="title" placeholder="Название" required>
+    <textarea id="description" placeholder="Описание" required></textarea>
+    <div id="questions" class="sortable"></div>
+    <button type="button" onclick="addQuestion()">Добавить вопрос</button>
+    <button type="submit">Сохранить</button>
+  </form>
+
+  <script>
+    const questionsDiv = document.getElementById('questions');
+    Sortable.create(questionsDiv, {
+      animation: 150,
+      onEnd: () => console.log('Вопросы переставлены')
+    });
+    const urlParams = new URLSearchParams(window.location.search);
+    const surveyId = urlParams.get('id');
+
+    if (surveyId) {
+      fetch(`/api/surveys`)
+        .then(res => res.json())
+        .then(surveys => {
+          const survey = surveys.find(s => s._id === surveyId);
+          if (survey) {
+            document.getElementById('title').value = survey.title || '';
+            document.getElementById('description').value = survey.description || '';
+            if (survey.questions && Array.isArray(survey.questions)) {
+              survey.questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `
+                  <select onchange="updateOptions(this)">
+                    <option value="text" ${q.type === 'text' ? 'selected' : ''}>Текст</option>
+                    <option value="single" ${q.type === 'single' ? 'selected' : ''}>Единственный выбор</option>
+                    <option value="multiple" ${q.type === 'multiple' ? 'selected' : ''}>Множественный выбор</option>
+                    <option value="photo" ${q.type === 'photo' ? 'selected' : ''}>Изображение</option>
+                  </select>
+                  <input type="text" placeholder="Вопрос" value="${q.question || ''}" required>
+                  <div class="options" style="display:${q.type === 'text' || q.type === 'photo' ? 'none' : 'block'};">
+                    ${q.options && q.options.length ? q.options.map(opt => `<input type="text" value="${opt}">`).join('') : '<input type="text" placeholder="Вариант ответа">'}
+                    <button type="button" onclick="addOption(this)">+</button>
+                  </div>
+                `;
+                questionsDiv.appendChild(div);
+              });
+            }
+          } else {
+            console.log('Анкета с ID', surveyId, 'не найдена');
+          }
+        })
+        .catch(error => console.error('Ошибка загрузки анкеты:', error));
+    }
+
+    function addQuestion() {
+      const div = document.createElement('div');
+      div.className = 'question-item';
+      div.innerHTML = `
+        <select onchange="updateOptions(this)">
+          <option value="text">Текст</option>
+          <option value="single">Единственный выбор</option>
+          <option value="multiple">Множественный выбор</option>
+          <option value="photo">Изображение</option>
+        </select>
+        <input type="text" placeholder="Вопрос" required>
+        <div class="options" style="display:none;">
+          <input type="text" placeholder="Вариант ответа">
+          <button type="button" onclick="addOption(this)">+</button>
+        </div>
+      `;
+      questionsDiv.appendChild(div);
+    }
+
+    function updateOptions(select) {
+      const optionsDiv = select.nextElementSibling.nextElementSibling;
+      optionsDiv.style.display = select.value === 'text' || select.value === 'photo' ? 'none' : 'block';
+    }
+
+    function addOption(btn) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Вариант ответа';
+      btn.parentElement.insertBefore(input, btn);
+    }
+
+    document.getElementById('survey-form').onsubmit = function(e) {
+      e.preventDefault();
+      const questions = [];
+      document.querySelectorAll('.question-item').forEach(div => {
+        const type = div.querySelector('select').value;
+        const question = div.querySelector('input[type="text"]').value;
+        const options = type !== 'text' && type !== 'photo' ? 
+          Array.from(div.querySelectorAll('.options input')).map(i => i.value).filter(val => val) : [];
+        questions.push({ type, question, options });
+      });
+
+      const survey = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        questions
+      };
+
+      console.log('Sending data:', survey);
+      console.log('JSON string:', JSON.stringify(survey));
+
+      const method = surveyId ? 'PUT' : 'POST';
+      const url = surveyId ? `/api/surveys/${surveyId}` : '/api/surveys';
+
+      fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(survey)
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw new Error(JSON.stringify(err)); });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Survey saved:', data);
+        location.href = '/';
+      })
+      .catch(error => console.error('Error:', error));
+    };
+  </script>
+</body>
+</html>

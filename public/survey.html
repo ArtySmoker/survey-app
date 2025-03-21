@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Заполнить анкету</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header>
+    <a href="/">Каталог анкет</a>
+    <a href="/create.html">Создать анкету</a>
+  </header>
+  <h1 id="title"></h1>
+  <form id="survey-form" enctype="multipart/form-data"></form>
+  <div id="results" style="display:none;"></div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const surveyId = urlParams.get('id');
+    let startTime = Date.now();
+
+    // Функция для отрисовки формы
+    function renderForm(survey) {
+      const form = document.getElementById('survey-form');
+      form.innerHTML = '';
+      document.getElementById('title').textContent = survey.title;
+
+      if (!survey.questions || !Array.isArray(survey.questions)) {
+        console.error('Ошибка: вопросы отсутствуют или имеют неверный формат');
+        form.innerHTML = '<p style="color:red;">Ошибка: вопросы отсутствуют или имеют неверный формат</p>';
+        return;
+      }
+
+      survey.questions.forEach((q, i) => {
+        const div = document.createElement('div');
+        div.innerHTML = `<p>${q.question}</p>`;
+
+        if (q.type === 'text') {
+          div.innerHTML += `<input type="text" name="q${i}" oninput="saveState()">`;
+        } else if (q.type === 'single') {
+          if (!q.options || !Array.isArray(q.options)) {
+            div.innerHTML += `<p style="color:red;">Ошибка: варианты ответа отсутствуют</p>`;
+          } else {
+            q.options.forEach(opt => {
+              div.innerHTML += `<label><input type="radio" name="q${i}" value="${opt}" onchange="saveState()">${opt}</label><br>`;
+            });
+          }
+        } else if (q.type === 'multiple') {
+          if (!q.options || !Array.isArray(q.options)) {
+            div.innerHTML += `<p style="color:red;">Ошибка: варианты ответа отсутствуют</p>`;
+          } else {
+            q.options.forEach(opt => {
+              div.innerHTML += `<label><input type="checkbox" name="q${i}" value="${opt}" onchange="saveState()">${opt}</label><br>`;
+            });
+          }
+        } else if (q.type === 'photo') {
+          div.innerHTML += `<input type="file" name="images" accept="image/*" onchange="saveState()">`;
+        } else {
+          console.error(`Ошибка: неизвестный тип вопроса "${q.type}"`);
+          div.innerHTML += `<p style="color:red;">Ошибка: неизвестный тип вопроса</p>`;
+        }
+
+        form.appendChild(div);
+      });
+
+      const submitButton = document.createElement('button');
+      submitButton.type = 'submit';
+      submitButton.textContent = 'Отправить';
+      form.appendChild(submitButton);
+
+      loadState();
+    }
+
+    // Загрузка анкеты
+    fetch(`/api/surveys`)
+      .then(res => res.json())
+      .then(surveys => {
+        const survey = surveys.find(s => s._id === surveyId);
+        if (survey) {
+          renderForm(survey);
+        } else {
+          console.error('Анкета не найдена');
+        }
+      })
+      .catch(error => console.error('Ошибка загрузки анкеты:', error));
+
+    // Сохранение состояния
+    function saveState() {
+      const answers = [];
+      document.querySelectorAll('#survey-form > div').forEach((div, i) => {
+        let answer;
+        if (div.querySelector('input[type="text"]')) {
+          answer = div.querySelector('input[type="text"]').value;
+        } else if (div.querySelector('input[type="radio"]')) {
+          answer = div.querySelector('input[type="radio"]:checked')?.value || '';
+        } else if (div.querySelector('input[type="checkbox"]')) {
+          answer = Array.from(div.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+        } else if (div.querySelector('input[type="file"]')) {
+          answer = div.querySelector('input[type="file"]').files.length ? `image_${i}` : '';
+        }
+        answers.push(answer);
+      });
+      localStorage.setItem(`survey_${surveyId}`, JSON.stringify(answers));
+    }
+
+    // Загрузка состояния
+    function loadState() {
+      const saved = localStorage.getItem(`survey_${surveyId}`);
+      if (saved) {
+        const answers = JSON.parse(saved);
+        document.querySelectorAll('#survey-form > div').forEach((div, i) => {
+          if (div.querySelector('input[type="text"]')) {
+            div.querySelector('input[type="text"]').value = answers[i] || '';
+          } else if (div.querySelector('input[type="radio"]')) {
+            if (answers[i]) div.querySelector(`input[value="${answers[i]}"]`).checked = true;
+          } else if (div.querySelector('input[type="checkbox"]')) {
+            if (answers[i]) answers[i].forEach(val => {
+              div.querySelector(`input[value="${val}"]`).checked = true;
+            });
+          }
+        });
+      }
+    }
+
+    // Обработка отправки формы
+    document.getElementById('survey-form').onsubmit = function (e) {
+      e.preventDefault();
+      const formData = new FormData();
+      const answers = [];
+      const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+
+      document.querySelectorAll('#survey-form > div').forEach((div, i) => {
+        const question = div.querySelector('p').textContent;
+        let answer;
+        if (div.querySelector('input[type="text"]')) {
+          answer = div.querySelector('input[type="text"]').value;
+        } else if (div.querySelector('input[type="radio"]')) {
+          answer = div.querySelector('input[type="radio"]:checked')?.value || '';
+        } else if (div.querySelector('input[type="checkbox"]')) {
+          answer = Array.from(div.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+        } else if (div.querySelector('input[type="file"]')) {
+          const fileInput = div.querySelector('input[type="file"]');
+          answer = fileInput.files.length ? `image_${i}` : '';
+          if (fileInput.files[0]) formData.append('images', fileInput.files[0]);
+        }
+        answers.push({ question, answer });
+      });
+
+      formData.append('surveyId', surveyId);
+      formData.append('answers', JSON.stringify(answers));
+      formData.append('timeSpent', timeSpent);
+
+      fetch('/api/responses', {
+        method: 'POST',
+        body: formData
+      })
+        .then(res => {
+          if (!res.ok) {
+            return res.json().then(err => { throw new Error(err.error || 'Ошибка при отправке ответов'); });
+          }
+          return res.json();
+        })
+        .then(data => {
+          console.log('Данные от сервера:', data);
+          if (data.success) {
+            localStorage.removeItem(`survey_${surveyId}`); // Очищаем состояние
+            displayStats(data);
+          } else {
+            throw new Error('Ошибка при отправке ответов');
+          }
+        })
+        .catch(error => {
+          console.error('Ошибка отправки данных:', error);
+          document.getElementById('results').innerHTML = `<h2 style="color:red;">${error.message}</h2>`;
+        });
+    };
+
+    // Функция для отображения статистики остается без изменений...
+    function displayStats(data) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+
+      let statsHTML = `<h2>Статистика анкеты</h2>`;
+      statsHTML += `<p>Среднее время заполнения: ${data.stats.avgTime.toFixed(2)} сек</p>`;
+      statsHTML += `<h3>Количество заполнений:</h3>`;
+      statsHTML += `<ul>
+        <li>За день: ${data.stats.fillsByPeriod.day}</li>
+        <li>За неделю: ${data.stats.fillsByPeriod.week}</li>
+        <li>За месяц: ${data.stats.fillsByPeriod.month}</li>
+      </ul>`;
+
+      statsHTML += `<h3>Ответы на вопросы:</h3>`;
+      Object.entries(data.stats.questionStats).forEach(([question, answers]) => {
+        statsHTML += `<p><strong>${question}</strong></p>`;
+        statsHTML += `<ul>`;
+        Object.entries(answers).forEach(([answer, count]) => {
+          if (answer.startsWith('/uploads/')) {
+            statsHTML += `<li><img src="${answer}" width="100"> (загружено ${count} раз)</li>`;
+          } else {
+            statsHTML += `<li>${answer}: ${count}</li>`;
+          }
+        });
+        statsHTML += `</ul>`;
+      });
+
+      resultsDiv.innerHTML = statsHTML;
+    }
+
+
+    function deleteSurvey(surveyId) {
+      if (confirm('Вы уверены, что хотите удалить эту анкету?')) {
+        fetch(`/api/surveys/${surveyId}`, {
+          method: 'DELETE'
+        })
+          .then(res => {
+            if (!res.ok) {
+              throw new Error('Ошибка при удалении анкеты');
+            }
+            return res.json(); // Теперь ответ всегда будет JSON
+          })
+          .then(data => {
+            alert(data.message || 'Анкета успешно удалена');
+            location.reload(); // Перезагружаем страницу, чтобы обновить список анкет
+          })
+          .catch(error => {
+            console.error('Ошибка удаления анкеты:', error);
+            alert('Ошибка при удалении анкеты');
+          });
+      }
+    }
+  </script>
+</body>
+
+</html>
