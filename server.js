@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const portfinder = require('portfinder');
 const multer = require('multer');
-
+const fs = require('fs');
 const app = express();
 
 // Настройка multer
@@ -18,6 +18,12 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
+
+
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
 const upload = multer({ 
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 } // 5 MB
@@ -49,12 +55,13 @@ app.get('/api/surveys', async (req, res) => {
   res.json(surveys);
 });
 
+
 app.post('/api/surveys', async (req, res) => {
   console.log('Raw body:', req.body);
   console.log('Type of raw body:', typeof req.body);
   console.log('Type of questions:', typeof req.body.questions);
   console.log('Questions content:', JSON.stringify(req.body.questions, null, 2));
-  
+
   let data = req.body;
   if (typeof data.questions === 'string') {
     console.log('Questions is a string, parsing...');
@@ -67,11 +74,7 @@ app.post('/api/surveys', async (req, res) => {
     res.status(201).json(survey);
   } catch (error) {
     console.error('Validation error:', error);
-    res.status(400).json({ 
-      error: 'Ошибка валидации', 
-      message: error.message, 
-      details: error.errors 
-    });
+    res.status(400).json({ error: 'Ошибка валидации', message: error.message, details: error.errors });
   }
 });
 
@@ -124,21 +127,21 @@ app.delete('/api/surveys/:id', async (req, res) => {
 });
 
 app.post('/api/responses', upload.array('images'), async (req, res) => {
-  const { surveyId, answers, timeSpent } = req.body;
-  const parsedAnswers = JSON.parse(answers);
-
-  if (req.files && req.files.length > 0) {
-    let fileIndex = 0;
-    parsedAnswers.forEach(answer => {
-      if (answer.answer && answer.answer.startsWith('image_') && req.files[fileIndex]) {
-        answer.filePath = `/uploads/${req.files[fileIndex].filename}`;
-        delete answer.answer;
-        fileIndex++;
-      }
-    });
-  }
-
   try {
+    const { surveyId, answers, timeSpent } = req.body;
+    const parsedAnswers = JSON.parse(answers);
+
+    if (req.files && req.files.length > 0) {
+      let fileIndex = 0;
+      parsedAnswers.forEach(answer => {
+        if (answer.answer && answer.answer.startsWith('image_') && req.files[fileIndex]) {
+          answer.filePath = `/uploads/${req.files[fileIndex].filename}`;
+          delete answer.answer;
+          fileIndex++;
+        }
+      });
+    }
+
     const response = new Response({ surveyId, answers: parsedAnswers, timeSpent });
     await response.save();
     await Survey.findByIdAndUpdate(surveyId, { $inc: { responseCount: 1 } });
