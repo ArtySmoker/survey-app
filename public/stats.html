@@ -8,11 +8,11 @@
 </head>
 <body>
   <header>
-    <a href="/">Каталог анкет</a>
-    <a href="/create.html">Создать анкету</a>
+    <a href="/">Catalog of questionnaires</a>
+    <a href="/create.html">Create a profile</a>
   </header>
-  <h1>Статистика анкеты</h1>
-  <p>Среднее время: <span id="avgTime"></span> сек</p>
+  <h1>Questionnaire statistics</h1>
+  <p>Average time: <span id="avgTime"></span> сек</p>
   <canvas id="fillsChart" width="400" height="200"></canvas>
   <div id="questionCharts"></div>
 
@@ -23,20 +23,20 @@
       .then(data => {
         document.getElementById('avgTime').textContent = data.avgTime;
 
-        // Линейная диаграмма заполнений
+        
         new Chart(document.getElementById('fillsChart'), {
           type: 'bar',
           data: {
-            labels: ['День', 'Неделя', 'Месяц'],
+            labels: ['Day', 'Week', 'Month'],
             datasets: [{
-              label: 'Количество заполнений',
+              label: 'Number of fillings',
               data: [data.fillsByPeriod.day, data.fillsByPeriod.week, data.fillsByPeriod.month],
               backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
             }]
           }
         });
 
-        // Круговые диаграммы для вопросов
+        
         const questionCharts = document.getElementById('questionCharts');
         Object.entries(data.questionStats).forEach(([question, answers]) => {
           const canvas = document.createElement('canvas');

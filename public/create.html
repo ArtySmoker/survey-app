@@ -2,28 +2,28 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Создать/Редактировать анкету</title>
+  <title>Create/Edit profile</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body>
   <header>
-    <a href="/">Каталог анкет</a>
+    <a href="/">Catalog of questionnaires</a>
   </header>
-  <h1>Создать/Редактировать анкету</h1>
+  <h1>Create/Edit profile</h1>
   <form id="survey-form">
-    <input type="text" id="title" placeholder="Название" required>
-    <textarea id="description" placeholder="Описание" required></textarea>
+    <input type="text" id="title" placeholder="Name" required>
+    <textarea id="description" placeholder="Description" required></textarea>
     <div id="questions" class="sortable"></div>
-    <button type="button" onclick="addQuestion()">Добавить вопрос</button>
-    <button type="submit">Сохранить</button>
+    <button type="button" onclick="addQuestion()">Add a question</button>
+    <button type="submit">Save</button>
   </form>
 
   <script>
     const questionsDiv = document.getElementById('questions');
     Sortable.create(questionsDiv, {
       animation: 150,
-      onEnd: () => console.log('Вопросы переставлены')
+      onEnd: () => console.log('The questions have been rearranged')
     });
     const urlParams = new URLSearchParams(window.location.search);
     const surveyId = urlParams.get('id');
@@ -42,14 +42,14 @@
                 div.className = 'question-item';
                 div.innerHTML = `
                   <select onchange="updateOptions(this)">
-                    <option value="text" ${q.type === 'text' ? 'selected' : ''}>Текст</option>
-                    <option value="single" ${q.type === 'single' ? 'selected' : ''}>Единственный выбор</option>
-                    <option value="multiple" ${q.type === 'multiple' ? 'selected' : ''}>Множественный выбор</option>
-                    <option value="photo" ${q.type === 'photo' ? 'selected' : ''}>Изображение</option>
+                    <option value="text" ${q.type === 'text' ? 'selected' : ''}>Text</option>
+                    <option value="single" ${q.type === 'single' ? 'selected' : ''}>The only choice</option>
+                    <option value="multiple" ${q.type === 'multiple' ? 'selected' : ''}>Multiple choice</option>
+                    <option value="photo" ${q.type === 'photo' ? 'selected' : ''}>Image</option>
                   </select>
-                  <input type="text" placeholder="Вопрос" value="${q.question || ''}" required>
+                  <input type="text" placeholder="Question" value="${q.question || ''}" required>
                   <div class="options" style="display:${q.type === 'text' || q.type === 'photo' ? 'none' : 'block'};">
-                    ${q.options && q.options.length ? q.options.map(opt => `<input type="text" value="${opt}">`).join('') : '<input type="text" placeholder="Вариант ответа">'}
+                    ${q.options && q.options.length ? q.options.map(opt => `<input type="text" value="${opt}">`).join('') : '<input type="text" placeholder="Answer option">'}
                     <button type="button" onclick="addOption(this)">+</button>
                   </div>
                 `;
@@ -57,10 +57,10 @@
               });
             }
           } else {
-            console.log('Анкета с ID', surveyId, 'не найдена');
+            console.log('Questionnaire with ID', surveyId, 'not found');
           }
         })
-        .catch(error => console.error('Ошибка загрузки анкеты:', error));
+        .catch(error => console.error('Error loading questionnaire:', error));
     }
 
     function addQuestion() {
@@ -68,14 +68,14 @@
       div.className = 'question-item';
       div.innerHTML = `
         <select onchange="updateOptions(this)">
-          <option value="text">Текст</option>
-          <option value="single">Единственный выбор</option>
-          <option value="multiple">Множественный выбор</option>
-          <option value="photo">Изображение</option>
+          <option value="text">Text</option>
+          <option value="single">The only choice</option>
+          <option value="multiple">Multiple choice</option>
+          <option value="photo">Image</option>
         </select>
-        <input type="text" placeholder="Вопрос" required>
+        <input type="text" placeholder="Question" required>
         <div class="options" style="display:none;">
-          <input type="text" placeholder="Вариант ответа">
+          <input type="text" placeholder="Answer option">
           <button type="button" onclick="addOption(this)">+</button>
         </div>
       `;
@@ -90,7 +90,7 @@
     function addOption(btn) {
       const input = document.createElement('input');
       input.type = 'text';
-      input.placeholder = 'Вариант ответа';
+      input.placeholder = 'Answer option';
       btn.parentElement.insertBefore(input, btn);
     }
 

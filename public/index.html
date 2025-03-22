@@ -2,19 +2,19 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Каталог анкет</title>
+  <title>Catalog of questionnaires</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Каталог анкет</h1>
-  <a href="/create.html">Создать анкету</a>
+  <h1>Catalog of questionnaires</h1>
+  <a href="/create.html">Create a profile</a>
   <div>
-    <label>Сортировать по: </label>
+    <label>Sort by: </label>
     <select id="sortBy" onchange="loadSurveys()">
-      <option value="">Без сортировки</option>
-      <option value="title">Название</option>
-      <option value="questions">Количество вопросов</option>
-      <option value="responseCount">Количество заполнений</option>
+      <option value="">No sorting</option>
+      <option value="title">Name</option>
+      <option value="questions">Number of questions</option>
+      <option value="responseCount">Number of fillings</option>
     </select>
   </div>
   <div id="survey-list"></div>
@@ -34,7 +34,7 @@
           const list = document.getElementById('survey-list');
           if (!append) list.innerHTML = '';
           if (!surveys.length && page === 1) {
-            list.innerHTML = '<p>Анкет пока нет</p>';
+            list.innerHTML = '<p>There are no questionnaires yet</p>';
             return;
           }
           surveys.forEach(survey => {
@@ -45,10 +45,10 @@
               <p>${survey.description}</p>
               <p>Вопросов: ${survey.questions.length}</p>
               <p>Заполнений: ${survey.responseCount || 0}</p>
-              <button onclick="location.href='/create.html?id=${survey._id}'">Редактировать</button>
-              <button onclick="location.href='/survey.html?id=${survey._id}'">Запустить</button>
-              <button onclick="location.href='/stats.html?id=${survey._id}'">Статистика</button>
-              <button onclick="deleteSurvey('${survey._id}')">Удалить</button>
+              <button onclick="location.href='/create.html?id=${survey._id}'">Edit</button>
+              <button onclick="location.href='/survey.html?id=${survey._id}'">Launch</button>
+              <button onclick="location.href='/stats.html?id=${survey._id}'">Statistics</button>
+              <button onclick="deleteSurvey('${survey._id}')">Delete</button>
             `;
             list.appendChild(card);
           });
@@ -58,23 +58,23 @@
     }
 
     function deleteSurvey(surveyId) {
-      if (confirm('Вы уверены, что хотите удалить эту анкету?')) {
+      if (confirm('Are you sure you want to delete this profile??')) {
         fetch(`/api/surveys/${surveyId}`, {
           method: 'DELETE'
         })
           .then(res => {
             if (!res.ok) {
-              throw new Error('Ошибка при удалении анкеты');
+              throw new Error('Error deleting profile');
             }
             return res.json();
           })
           .then(data => {
-            alert('Анкета успешно удалена');
-            location.reload(); // Перезагружаем страницу, чтобы обновить список анкет
+            alert('The questionnaire has been successfully deleted.');
+            location.reload();
           })
           .catch(error => {
-            console.error('Ошибка удаления анкеты:', error);
-            alert('Ошибка при удалении анкеты');
+            console.error('Error deleting profile:', error);
+            alert('Error deleting profile:');
           });
       }
     }
@@ -85,7 +85,7 @@
       }
     });
 
-    loadSurveys(); // Первая загрузка
+    loadSurveys(); 
   </script>
 </body>
 </html>

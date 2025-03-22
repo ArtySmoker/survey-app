@@ -1,10 +1,9 @@
-// models/Survey.js
 const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
-  type: { type: String, required: true }, // "text", "single", "multiple", "photo"
+  type: { type: String, required: true }, 
   question: { type: String, required: true },
-  options: [{ type: String }] // Не используется для "photo"
+  options: [{ type: String }] 
 });
 
 const surveySchema = new mongoose.Schema({

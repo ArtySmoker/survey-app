@@ -3,14 +3,14 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Заполнить анкету</title>
+  <title>Fill out the form</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
   <header>
-    <a href="/">Каталог анкет</a>
-    <a href="/create.html">Создать анкету</a>
+    <a href="/">Catalog of questionnaires</a>
+    <a href="/create.html">Create a profile</a>
   </header>
   <h1 id="title"></h1>
   <form id="survey-form" enctype="multipart/form-data"></form>
@@ -21,15 +21,15 @@
     const surveyId = urlParams.get('id');
     let startTime = Date.now();
 
-    // Функция для отрисовки формы
+
     function renderForm(survey) {
       const form = document.getElementById('survey-form');
       form.innerHTML = '';
       document.getElementById('title').textContent = survey.title;
 
       if (!survey.questions || !Array.isArray(survey.questions)) {
-        console.error('Ошибка: вопросы отсутствуют или имеют неверный формат');
-        form.innerHTML = '<p style="color:red;">Ошибка: вопросы отсутствуют или имеют неверный формат</p>';
+        console.error('Error: questions are missing or in invalid format');
+        form.innerHTML = '<p style="color:red;">Error: questions are missing or in invalid format</p>';
         return;
       }
 
@@ -41,7 +41,7 @@
           div.innerHTML += `<input type="text" name="q${i}" oninput="saveState()">`;
         } else if (q.type === 'single') {
           if (!q.options || !Array.isArray(q.options)) {
-            div.innerHTML += `<p style="color:red;">Ошибка: варианты ответа отсутствуют</p>`;
+            div.innerHTML += `<p style="color:red;">Error: No answer options available</p>`;
           } else {
             q.options.forEach(opt => {
               div.innerHTML += `<label><input type="radio" name="q${i}" value="${opt}" onchange="saveState()">${opt}</label><br>`;
@@ -49,7 +49,7 @@
           }
         } else if (q.type === 'multiple') {
           if (!q.options || !Array.isArray(q.options)) {
-            div.innerHTML += `<p style="color:red;">Ошибка: варианты ответа отсутствуют</p>`;
+            div.innerHTML += `<p style="color:red;">Error: No answer options available</p>`;
           } else {
             q.options.forEach(opt => {
               div.innerHTML += `<label><input type="checkbox" name="q${i}" value="${opt}" onchange="saveState()">${opt}</label><br>`;
@@ -58,8 +58,8 @@
         } else if (q.type === 'photo') {
           div.innerHTML += `<input type="file" name="images" accept="image/*" onchange="saveState()">`;
         } else {
-          console.error(`Ошибка: неизвестный тип вопроса "${q.type}"`);
-          div.innerHTML += `<p style="color:red;">Ошибка: неизвестный тип вопроса</p>`;
+          console.error(`Error: unknown question type "${q.type}"`);
+          div.innerHTML += `<p style="color:red;">Error: unknown question type</p>`;
         }
 
         form.appendChild(div);
@@ -81,10 +81,10 @@
         if (survey) {
           renderForm(survey);
         } else {
-          console.error('Анкета не найдена');
+          console.error('Questionnaire not found');
         }
       })
-      .catch(error => console.error('Ошибка загрузки анкеты:', error));
+      .catch(error => console.error('Error loading questionnaire:', error));
 
     // Сохранение состояния
     function saveState() {
@@ -158,21 +158,21 @@
       })
         .then(res => {
           if (!res.ok) {
-            return res.json().then(err => { throw new Error(err.error || 'Ошибка при отправке ответов'); });
+            return res.json().then(err => { throw new Error(err.error || 'Error sending replies'); });
           }
           return res.json();
         })
         .then(data => {
-          console.log('Данные от сервера:', data);
+          console.log('Data from the server:', data);
           if (data.success) {
-            localStorage.removeItem(`survey_${surveyId}`); // Очищаем состояние
+            localStorage.removeItem(`survey_${surveyId}`); 
             displayStats(data);
           } else {
-            throw new Error('Ошибка при отправке ответов');
+            throw new Error('Error sending replies');
           }
         })
         .catch(error => {
-          console.error('Ошибка отправки данных:', error);
+          console.error('Error sending data:', error);
           document.getElementById('results').innerHTML = `<h2 style="color:red;">${error.message}</h2>`;
         });
     };
@@ -182,22 +182,22 @@
       const resultsDiv = document.getElementById('results');
       resultsDiv.style.display = 'block';
 
-      let statsHTML = `<h2>Статистика анкеты</h2>`;
-      statsHTML += `<p>Среднее время заполнения: ${data.stats.avgTime.toFixed(2)} сек</p>`;
-      statsHTML += `<h3>Количество заполнений:</h3>`;
+      let statsHTML = `<h2>Questionnaire statistics</h2>`;
+      statsHTML += `<p>Average filling time: ${data.stats.avgTime.toFixed(2)} сек</p>`;
+      statsHTML += `<h3>Number of fillings:</h3>`;
       statsHTML += `<ul>
         <li>За день: ${data.stats.fillsByPeriod.day}</li>
         <li>За неделю: ${data.stats.fillsByPeriod.week}</li>
         <li>За месяц: ${data.stats.fillsByPeriod.month}</li>
       </ul>`;
 
-      statsHTML += `<h3>Ответы на вопросы:</h3>`;
+      statsHTML += `<h3>Answers to questions:</h3>`;
       Object.entries(data.stats.questionStats).forEach(([question, answers]) => {
         statsHTML += `<p><strong>${question}</strong></p>`;
         statsHTML += `<ul>`;
         Object.entries(answers).forEach(([answer, count]) => {
           if (answer.startsWith('/uploads/')) {
-            statsHTML += `<li><img src="${answer}" width="100"> (загружено ${count} раз)</li>`;
+            statsHTML += `<li><img src="${answer}" width="100"> (loaded ${count} times)</li>`;
           } else {
             statsHTML += `<li>${answer}: ${count}</li>`;
           }
@@ -210,7 +210,7 @@
 
 
     function deleteSurvey(surveyId) {
-      if (confirm('Вы уверены, что хотите удалить эту анкету?')) {
+      if (confirm('Are you sure you want to delete this profile?')) {
         fetch(`/api/surveys/${surveyId}`, {
           method: 'DELETE'
         })

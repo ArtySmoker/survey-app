@@ -8,7 +8,7 @@ const multer = require('multer');
 const fs = require('fs');
 const app = express();
 
-// Настройка multer
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -29,9 +29,9 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5 MB
 });
 
-app.use(express.json()); // Парсинг JSON
-app.use(express.static('public')); // Статические файлы
-app.use('/uploads', express.static('uploads')); // Доступ к загруженным файлам
+app.use(express.json()); 
+app.use(express.static('public')); 
+app.use('/uploads', express.static('uploads')); 
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
@@ -40,7 +40,7 @@ mongoose.connect(process.env.MONGO_URI)
 const Survey = require('./models/Survey');
 const Response = require('./models/Response');
 
-// Маршруты API
+
 app.get('/api/surveys', async (req, res) => {
   const { sortBy, page = 1, limit = 10 } = req.query;
   let sortOption = {};
@@ -74,7 +74,7 @@ app.post('/api/surveys', async (req, res) => {
     res.status(201).json(survey);
   } catch (error) {
     console.error('Validation error:', error);
-    res.status(400).json({ error: 'Ошибка валидации', message: error.message, details: error.errors });
+    res.status(400).json({ error: 'Validation error', message: error.message, details: error.errors });
   }
 });
 
@@ -85,7 +85,7 @@ app.put('/api/surveys/:id', async (req, res) => {
     const survey = await Survey.findById(req.params.id);
     if (!survey) {
       console.log('Survey not found for ID:', req.params.id);
-      return res.status(404).json({ error: 'Анкета не найдена' });
+      return res.status(404).json({ error: 'Questionnaire not found' });
     }
     const updateData = { ...req.body };
     delete updateData._id;
@@ -93,11 +93,11 @@ app.put('/api/surveys/:id', async (req, res) => {
     if (Array.isArray(updateData.questions)) {
       updateData.questions.forEach(q => {
         if (typeof q !== 'object' || !q.type || !q.question) {
-          throw new Error('Некорректный формат вопроса');
+          throw new Error('Incorrect question format');
         }
       });
     } else {
-      throw new Error('Questions должен быть массивом');
+      throw new Error('Questions must be an array');
     }
 
     Object.assign(survey, updateData);
@@ -106,7 +106,7 @@ app.put('/api/surveys/:id', async (req, res) => {
   } catch (error) {
     console.error('Update error:', error);
     res.status(400).json({ 
-      error: 'Ошибка при обновлении', 
+      error: 'Error during update', 
       message: error.message, 
       details: error.errors 
     });
@@ -117,12 +117,12 @@ app.delete('/api/surveys/:id', async (req, res) => {
   try {
     const result = await Survey.findByIdAndDelete(req.params.id);
     if (!result) {
-      return res.status(404).json({ error: 'Анкета не найдена' });
+      return res.status(404).json({ error: 'Questionnaire not found' });
     }
-    res.json({ success: true, message: 'Анкета успешно удалена' });
+    res.json({ success: true, message: 'The questionnaire has been successfully deleted' });
   } catch (error) {
-    console.error('Ошибка удаления анкеты:', error);
-    res.status(500).json({ error: 'Ошибка сервера' });
+    console.error('Error deleting profile:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -148,8 +148,8 @@ app.post('/api/responses', upload.array('images'), async (req, res) => {
     const stats = await getSurveyStats(surveyId);
     res.json({ success: true, stats });
   } catch (error) {
-    console.error('Ошибка сохранения ответа:', error);
-    res.status(500).json({ error: 'Ошибка сервера', message: error.message });
+    console.error('Error saving answer:', error);
+    res.status(500).json({ error: 'Server error', message: error.message });
   }
 });
 
@@ -193,16 +193,16 @@ app.get('/api/surveys/:id/stats', async (req, res) => {
   res.json({ avgTime, fillsByPeriod, questionStats });
 });
 
-// Обработчик всех остальных маршрутов (после API)
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Запуск сервера
+
 portfinder.basePort = 3000;
 portfinder.getPort((err, port) => {
   if (err) {
-    console.error('Ошибка при поиске порта:', err);
+    console.error('Error searching for port:', err);
     return;
   }
   app.listen(port, () => {
@@ -210,7 +210,7 @@ portfinder.getPort((err, port) => {
   });
 });
 
-// Функция для получения статистики
+
 async function getSurveyStats(surveyId) {
   const responses = await Response.find({ surveyId });
 
